@@ -1,7 +1,7 @@
 // PROVIDED CODE BELOW (LINES 1 - 80) DO NOT REMOVE
 
 // The store will hold all information needed globally
-var store = {
+let store = {
 	track_id: undefined,
 	player_id: undefined,
 	race_id: undefined,
@@ -15,17 +15,25 @@ document.addEventListener("DOMContentLoaded", function() {
 
 async function onPageLoad() {
 	try {
-		getTracks()
-			.then(tracks => {
-				const html = renderTrackCards(tracks)
-				renderAt('#tracks', html)
-			})
+		const tracksPromise = new Promise((resolve) => {
+			resolve(getTracks());
+		});
+		const racersPromise = new Promise((resolve) => {
+			resolve(getRacers());
+		});
 
-		getRacers()
-			.then((racers) => {
-				const html = renderRacerCars(racers)
-				renderAt('#racers', html)
-			})
+		Promise.all([tracksPromise, racersPromise])
+		.then(results => {
+			const tracks = results[0];
+			const racers = results[1];
+
+			const trackHtml = renderTrackCards(tracks);
+			renderAt('#tracks', trackHtml);
+			const racerHtml = renderRacerCars(racers);
+			renderAt('#racers', racerHtml);
+			
+		});
+		
 	} catch(error) {
 		console.log("Problem getting tracks and racers ::", error.message)
 		console.error(error)
@@ -80,13 +88,8 @@ async function handleCreateRace() {
 		const player_id = store.player_id;
 		const track_id = store.track_id;
 
-		console.log('Player ID: ' + player_id);
-		console.log('Track ID: ' + track_id);
-
 		// invoke the API call to create the race, then save the result
 		const race = await createRace(player_id, track_id);
-		console.log('race: ');
-		console.log(race);
 
 		// update the store with the race id
 		store.race_id = race.ID - 1;
@@ -323,7 +326,7 @@ function resultsView(positions) {
 }
 
 function raceProgress(positions) {
-	let userPlayer = positions.find(e => e.id === store.player_id)
+	const userPlayer = positions.find(e => e.id === store.player_id)
 	userPlayer.driver_name += " (you)"
 
 	positions = positions.sort((a, b) => (a.segment > b.segment) ? -1 : 1)
